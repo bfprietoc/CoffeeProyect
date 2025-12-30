@@ -1,7 +1,7 @@
 package main
 
 import (
-	"coffeeProyect/routes"
+	"coffeeproyect/routes"
 	"log"
 	"net/http"
 	"os"
