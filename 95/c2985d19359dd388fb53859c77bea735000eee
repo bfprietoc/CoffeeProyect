@@ -1,0 +1,245 @@
+internal/store/redis/cart_store.go
+  3678d46db7e6b37a 1-110
+migrations/001_create_producers.up.sql
+  3678d46db7e6b37a 1-4
+routes/routes.go
+  3678d46db7e6b37a 4,8-17,20-67
+internal/domain/user.go
+  3678d46db7e6b37a 1-22
+internal/auth/password.go
+  3678d46db7e6b37a 1-17
+internal/store/postgres/order_store.go
+  3678d46db7e6b37a 1-271
+ARCHITECTURE.md
+  3678d46db7e6b37a 1-894
+internal/store/postgres/user_store.go
+  3678d46db7e6b37a 1-146
+internal/handler/order_handler_test.go
+  3678d46db7e6b37a 1-126
+internal/domain/stock.go
+  3678d46db7e6b37a 1-12
+internal/service/stock_service_test.go
+  3678d46db7e6b37a 1-92
+internal/handler/admin_handler.go
+  3678d46db7e6b37a 1-263
+internal/store/memory/waitlist_store.go
+  3678d46db7e6b37a 1-56
+internal/store/postgres/waitlist_store.go
+  3678d46db7e6b37a 1-61
+internal/handler/coffee_handler_test.go
+  3678d46db7e6b37a 1-122
+internal/event/bus.go
+  3678d46db7e6b37a 1-34
+internal/store/memory/stock_store.go
+  3678d46db7e6b37a 1-55
+Makefile
+  s_9c0d45949c12de::t_b0d4ec0dbe2713 16,19,22
+  3678d46db7e6b37a 1-15,17-18,20-21,23-31
+migrations/002_create_farms.up.sql
+  3678d46db7e6b37a 1-7
+internal/auth/jwt.go
+  3678d46db7e6b37a 1-102
+internal/event/publisher.go
+  3678d46db7e6b37a 1-7
+internal/service/checkout_service.go
+  3678d46db7e6b37a 1-163
+internal/service/waitlist_service.go
+  3678d46db7e6b37a 1-88
+go.mod
+  3678d46db7e6b37a 3-18
+internal/store/postgres/coffee_store_test.go
+  3678d46db7e6b37a 1-131
+migrations/004_create_users.up.sql
+  3678d46db7e6b37a 1-7
+internal/handler/cart_handler.go
+  3678d46db7e6b37a 1-162
+internal/cache/memory/memory_coffee_cache.go
+  3678d46db7e6b37a 1-59
+internal/handler/checkout_handler.go
+  3678d46db7e6b37a 1-68
+migrations/008_create_stock_movements.up.sql
+  3678d46db7e6b37a 1-10
+internal/store/memory/coffee_store.go
+  3678d46db7e6b37a 1-207
+migrations/005_create_addresses.up.sql
+  3678d46db7e6b37a 1-10
+internal/handler/user_handler.go
+  3678d46db7e6b37a 1-157
+internal/event/events.go
+  3678d46db7e6b37a 1-42
+internal/handler/order_handler.go
+  3678d46db7e6b37a 1-75
+internal/middleware/admin.go
+  3678d46db7e6b37a 1-23
+migrations/008_create_stock_movements.down.sql
+  3678d46db7e6b37a 1
+internal/event/pg_notify.go
+  3678d46db7e6b37a 1-86
+internal/handler/coffee_handler.go
+  3678d46db7e6b37a 1-81
+internal/service/notification_service.go
+  3678d46db7e6b37a 1-128
+.env.example
+  3678d46db7e6b37a 1-4
+internal/handler/health_handler.go
+  3678d46db7e6b37a 1-13
+internal/service/coffee_service_test.go
+  3678d46db7e6b37a 1-123
+migrations/007_create_orders.up.sql
+  3678d46db7e6b37a 1-31
+internal/notification/email_sender.go
+  3678d46db7e6b37a 1-7
+internal/domain/errors.go
+  3678d46db7e6b37a 1-13
+internal/cache/coffee_cache.go
+  3678d46db7e6b37a 1-32
+internal/handler/admin_handler_test.go
+  3678d46db7e6b37a 1-226
+internal/middleware/logger.go
+  3678d46db7e6b37a 1-26
+internal/domain/waitlist.go
+  3678d46db7e6b37a 1-12
+internal/service/order_service_test.go
+  3678d46db7e6b37a 1-96
+go.sum
+  ai_agent 1-70
+internal/store/postgres/concurrent_checkout_test.go
+  3678d46db7e6b37a 1-116
+internal/db/migrate.go
+  3678d46db7e6b37a 1-29
+internal/store/postgres/coffee_store.go
+  3678d46db7e6b37a 1-205
+internal/handler/auth_handler.go
+  3678d46db7e6b37a 1-110
+migrations/005_create_addresses.down.sql
+  3678d46db7e6b37a 1
+main.go
+  3678d46db7e6b37a 4-15,17,21-22,24-25,34-144,146-151,156,159-160,162,166-232
+migrations/003_create_coffees.up.sql
+  3678d46db7e6b37a 1-28
+EXECUTION.md
+  3678d46db7e6b37a 1-618
+internal/store/memory/user_store.go
+  3678d46db7e6b37a 1-123
+internal/handler/auth_handler_test.go
+  3678d46db7e6b37a 1-258
+docker-compose.yml
+  3678d46db7e6b37a 1-29
+internal/domain/order.go
+  3678d46db7e6b37a 1-46
+internal/store/cart_store.go
+  3678d46db7e6b37a 1-14
+internal/store/memory/cart_store.go
+  3678d46db7e6b37a 1-71
+internal/domain/cart.go
+  3678d46db7e6b37a 1-23
+internal/service/order_service.go
+  3678d46db7e6b37a 1-69
+internal/handler/response.go
+  3678d46db7e6b37a 1-21
+migrations/002_create_farms.down.sql
+  3678d46db7e6b37a 1
+internal/service/cart_service.go
+  3678d46db7e6b37a 1-135
+internal/store/coffee_store.go
+  3678d46db7e6b37a 3-19
+migrations/seed.sql
+  3678d46db7e6b37a 1-66
+migrations/006_create_carts.up.sql
+  3678d46db7e6b37a 1-20
+migrations/006_create_carts.down.sql
+  3678d46db7e6b37a 1-2
+internal/cache/redis/redis_coffee_cache.go
+  3678d46db7e6b37a 1-98
+internal/service/stock_service.go
+  3678d46db7e6b37a 1-61
+internal/store/waitlist_store.go
+  3678d46db7e6b37a 1-9
+internal/store/memory/coffee_store_test.go
+  3678d46db7e6b37a 1-109
+internal/notification/smtp/smtp_sender.go
+  3678d46db7e6b37a 1-29
+internal/service/coffee_service.go
+  3678d46db7e6b37a 1-119
+migrations/004_create_users.down.sql
+  3678d46db7e6b37a 1
+internal/handler/cart_handler_test.go
+  3678d46db7e6b37a 1-236
+migrations/007_create_orders.down.sql
+  3678d46db7e6b37a 1-2
+internal/handler/waitlist_handler.go
+  3678d46db7e6b37a 1-53
+internal/handler/waitlist_handler_test.go
+  3678d46db7e6b37a 1-117
+internal/middleware/cors.go
+  3678d46db7e6b37a 1-24
+migrations/009_create_waitlist.up.sql
+  3678d46db7e6b37a 1-11
+migrations/009_create_waitlist.down.sql
+  3678d46db7e6b37a 1
+PLAN.md
+  3678d46db7e6b37a 1-479
+internal/service/waitlist_service_test.go
+  3678d46db7e6b37a 1-167
+internal/service/notification_service_test.go
+  3678d46db7e6b37a 1-219
+internal/store/postgres/stock_store.go
+  3678d46db7e6b37a 1-85
+migrations/001_create_producers.down.sql
+  3678d46db7e6b37a 1
+.gitignore
+  s_9c0d45949c12de::t_1c479cd781c6d1 1-15
+internal/service/user_service.go
+  3678d46db7e6b37a 1-142
+internal/middleware/auth.go
+  3678d46db7e6b37a 1-60
+internal/store/order_store.go
+  3678d46db7e6b37a 1-23
+internal/db/connect.go
+  3678d46db7e6b37a 1-26
+internal/store/postgres/cart_store.go
+  3678d46db7e6b37a 1-111
+internal/store/stock_store.go
+  3678d46db7e6b37a 1-16
+internal/service/checkout_service_test.go
+  3678d46db7e6b37a 1-160
+README.md
+  s_9c0d45949c12de::t_d1678985b0f1ee 1-159
+internal/store/memory/order_store.go
+  3678d46db7e6b37a 1-123
+internal/handler/checkout_handler_test.go
+  3678d46db7e6b37a 1-143
+internal/store/user_store.go
+  3678d46db7e6b37a 1-13
+migrations/003_create_coffees.down.sql
+  3678d46db7e6b37a 1-3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "95c2985d19359dd388fb53859c77bea735000eee",
+  "prompts": {
+    "3678d46db7e6b37a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5bd91ef-e44b-4db8-8485-0bcef69399a2",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "bfprietoc <bfprietoc@gmail.com>",
+      "total_additions": 10247,
+      "total_deletions": 827,
+      "accepted_lines": 9439,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_9c0d45949c12de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a81cdacd-331b-4865-a5a3-ba1418efd3ae",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "bfprietoc <bfprietoc@gmail.com>"
+    }
+  }
+}
