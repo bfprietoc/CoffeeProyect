@@ -1,0 +1,15 @@
+# Entorno local
+.env
+
+# Claude Code
+.claude/
+
+# Binarios compilados
+/bin/
+*.exe
+
+# Caché de Go
+vendor/
+
+# macOS
+.DS_Store
