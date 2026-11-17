@@ -6,11 +6,11 @@ API REST en Go para una tienda de café especializado. Soporta modo in-memory (s
 
 ## Prerrequisitos
 
-| Herramienta | Instalación |
-|---|---|
-| Go 1.23+ | `brew install go` |
-| Colima | `brew install colima` |
-| golang-migrate | `brew install golang-migrate` |
+| Herramienta | Instalación (macOS) | Nota |
+|---|---|---|
+| Go 1.23+ | `brew install go` | — |
+| Docker / Colima | `brew install colima` | En Linux, Docker directo (sin Colima) |
+| golang-migrate | `brew install golang-migrate` | **Opcional**: solo para los targets `make migrate-up/down`. El servidor aplica las migraciones automáticamente al arrancar con `DATABASE_URL` |
 
 ---
 
@@ -69,13 +69,13 @@ make infra-up
 
 Espera a que Postgres esté listo antes de continuar (el Makefile lo hace automáticamente).
 
-### 4. Correr migraciones
+### 4. Correr migraciones (opcional)
 
 ```bash
 make migrate-up
 ```
 
-Aplica las 9 migraciones en orden. Si ya estaban aplicadas imprime `no change` — está bien.
+> **Nota:** este paso es opcional. El servidor aplica las migraciones automáticamente al arrancar con `DATABASE_URL` (ver `internal/db/migrate.go`). Úsalo si querés aplicarlas antes de levantar el servidor o revertir con `make migrate-down` (ambos targets requieren el binario `golang-migrate`).
 
 ### 5. Cargar datos de prueba
 
@@ -96,9 +96,12 @@ Log esperado:
 connected to PostgreSQL
 connected to Redis (guest carts)
 Redis catalog cache enabled
+SMTP_HOST not set — email notifications disabled
 pg_notify listener started
 listening on :8080
 ```
+
+> **En Linux:** no hace falta Colima — basta con Docker (`sudo systemctl start docker` si el daemon no está corriendo). Los pasos 1 y 2 quedan en ese caso.
 
 ---
 
