@@ -14,7 +14,7 @@ bug de cleanup detectado a posteriori).
 | 3 | Los 500 no dejan rastro en el log | Media (operabilidad) | ✅ Fixed |
 | 4 | 500 transitorio en `POST /waitlist` | Baja (no reproducible) | Cubierto indirectamente por #3 |
 | 5 | Código muerto en `waitlist_store.go Subscribe` | Baja (mantenibilidad) | ✅ Fixed |
-| 6 | `pg_notify` es código muerto en `main.go` | Baja (diseño) | ⏳ Pendiente de decisión (fuera de esta branch) |
+| 6 | `pg_notify` es código muerto en `main.go` | Baja (diseño) | ✅ Resuelto: retirado (opción B) |
 | 7 | Test de concurrencia contamina la DB (cleanup inválido) | Media (confiabilidad de tests) | ✅ Fixed y verificado |
 
 ---
@@ -135,22 +135,32 @@ en `errors.go`).
 
 ---
 
-## Bug 6 — `pg_notify` muerto en `main.go` ⏳ PENDIENTE DE DECISIÓN
+## Bug 6 — `pg_notify` muerto en `main.go`
 
-**Síntoma:** `main.go` arranca un `PGListener` ("pg_notify listener started")
-pero **nadie llama a `Subscribe` sobre él**, y `PGPublisher` nunca se
-instancia. ARCHITECTURE.md lo documenta como parte del diseño (vía de eventos
-para multi-instancia).
+**Síntoma:** `main.go` arrancaba un `PGListener` ("pg_notify listener started")
+pero **nadie llamaba a `Subscribe` sobre él**, y `PGPublisher` nunca se
+instanciaba. ARCHITECTURE.md lo documentaba como parte del diseño (vía de
+eventos para multi-instancia).
 
-**Opciones:**
-- **A. Cablearlo de verdad:** `PGPublisher` como publisher (o wrapper del bus)
-  + subscripciones del listener a los topics existentes. Habilita varias
-  instancias del server compartiendo invalidación de cache y notificaciones.
-- **B. Retirarlo:** borrar el listener de `main.go` y corregir
-  ARCHITECTURE.md. Menos código, diseño de instancia única explícito.
+**Impacto real: ninguno funcional.** Todo fluía por el bus en memoria (la
+batería E2E 126/126 lo demuestra). Solo afectaba: el log sugería que estaba
+activo, ARCHITECTURE.md describía un diseño inexistente, y había una conexión
+Postgres + goroutine en standby.
 
-Se decide después de mergear esta branch (afecta arquitectura, no es un bug
-de comportamiento).
+**Decisión: opción B — retirarlo.**
+- Se elimina el listener de `main.go` (y el import de `context`, que solo lo
+  usaba ese bloque).
+- Se borra `internal/event/pg_notify.go` (sin otros usos ni tests; queda en el
+  histórico de git si se necesita).
+- Se corrige ARCHITECTURE.md: el adaptador de eventos es el "Bus en memoria
+  (síncrono)".
+
+**Por qué no cablearlo:** la cache ya es cross-instancia vía Redis compartido
+(ya invalidada correctamente por el fix #2), y los eventos por-request (emails)
+los procesa la instancia que atendió el request. pg_notify es fire-and-forget
+(sin durabilidad ni reintentos), así que su único valor sería fan-out entre
+instancias, algo que no aplica en el diseño actual de instancia única. Si a
+futuro se escala, se recupera el wiring desde el histórico de git.
 
 ---
 

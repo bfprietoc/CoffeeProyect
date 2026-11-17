@@ -14,7 +14,6 @@ import (
 	pgstore "coffeeproyect/internal/store/postgres"
 	redistore "coffeeproyect/internal/store/redis"
 	"coffeeproyect/routes"
-	"context"
 	"log"
 	"net/http"
 	"os"
@@ -124,13 +123,6 @@ func main() {
 			}
 		}
 	})
-
-	// start pg_notify listener if DATABASE_URL is set
-	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
-		pgListener := event.NewPGListener(dsn)
-		pgListener.Start(context.Background())
-		log.Println("pg_notify listener started")
-	}
 
 	deps := routes.Deps{
 		Health:   handler.NewHealthHandler(),
