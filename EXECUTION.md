@@ -37,9 +37,9 @@ curl -X POST http://localhost:8080/cart/items \
 
 ```bash
 make infra-up          # levanta Postgres + Redis
-make migrate-up        # corre las 9 migraciones
+make migrate-up        # corre las 9 migraciones (opcional: el servidor lo hace solo al arrancar)
 make seed              # carga los 5 cafés colombianos
-ADMIN_API_KEY=secret make run
+ADMIN_API_KEY=secret123 make run
 ```
 
 ```bash
@@ -110,6 +110,8 @@ docker compose logs redis
 ## Migraciones de base de datos
 
 > Requiere que los contenedores estén corriendo (`make infra-up`).
+> Los targets `migrate-up`/`migrate-down` usan el binario `golang-migrate`.
+> **Nota:** son opcionales — el servidor aplica las migraciones pendientes automáticamente al arrancar con `DATABASE_URL` (ver `internal/db/migrate.go`).
 
 ```bash
 # Aplicar todas las migraciones pendientes
@@ -126,6 +128,8 @@ make seed
 
 ```bash
 make infra-up && make migrate-up && make seed
+# o sin el binario golang-migrate (el servidor migra solo al arrancar):
+make infra-up && make seed
 ```
 
 ---
