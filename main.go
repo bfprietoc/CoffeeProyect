@@ -63,8 +63,10 @@ func main() {
 	stockService := service.NewStockService(stockStore, coffeeService, bus)
 	userService := service.NewUserService(userStore, jwtSecret).WithPublisher(bus)
 	cartService := service.NewCartService(guestCartStore, userCartStore, coffeeStore)
-	checkoutService := service.NewCheckoutService(userCartStore, coffeeStore, orderStore, userStore).WithPublisher(bus)
-	orderService := service.NewOrderService(orderStore).WithPublisher(bus)
+	checkoutService := service.NewCheckoutService(userCartStore, coffeeStore, orderStore, userStore).
+		WithPublisher(bus).WithCoffeeService(coffeeService)
+	orderService := service.NewOrderService(orderStore).
+		WithPublisher(bus).WithCoffeeService(coffeeService)
 
 	// buildMailer returns *smtp.Sender which may be nil. Wrapping a typed nil in an
 	// interface produces a non-nil interface value, causing nil-pointer panics inside

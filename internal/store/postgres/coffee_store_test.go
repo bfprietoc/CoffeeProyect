@@ -63,6 +63,14 @@ func TestPostgresCoffeeStore_GetByID_found(t *testing.T) {
 	}
 }
 
+func TestPostgresCoffeeStore_GetByID_invalidUUID(t *testing.T) {
+	s := setupDB(t)
+	_, err := s.GetByID("no-es-un-uuid")
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("expected ErrNotFound for malformed uuid, got: %v", err)
+	}
+}
+
 func TestPostgresCoffeeStore_GetByID_notFound(t *testing.T) {
 	s := setupDB(t)
 

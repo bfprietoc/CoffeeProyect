@@ -39,7 +39,7 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 
 	user, addresses, err := h.service.GetProfile(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *UserHandler) AddAddress(w http.ResponseWriter, r *http.Request) {
 		IsDefault:  req.IsDefault,
 	})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 
@@ -125,7 +125,7 @@ func (h *UserHandler) GetAddresses(w http.ResponseWriter, r *http.Request) {
 
 	addresses, err := h.service.GetAddresses(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 
@@ -149,7 +149,7 @@ func (h *UserHandler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "address not found", "NOT_FOUND")
 		return
 	} else if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 

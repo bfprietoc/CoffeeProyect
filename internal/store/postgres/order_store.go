@@ -78,11 +78,18 @@ func (s *OrderStore) Create(order domain.Order) (domain.Order, error) {
 }
 
 func (s *OrderStore) GetByID(id string) (domain.Order, error) {
-	return s.scanOrder(`WHERE o.id = $1`, id)
+	o, err := s.scanOrder(`WHERE o.id = $1`, id)
+	if isInvalidUUID(err) {
+		return domain.Order{}, domain.ErrNotFound
+	}
+	return o, err
 }
 
 func (s *OrderStore) GetByIDAndUser(id, userID string) (domain.Order, error) {
 	o, err := s.scanOrder(`WHERE o.id = $1`, id)
+	if isInvalidUUID(err) {
+		return domain.Order{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.Order{}, err
 	}
@@ -124,6 +131,9 @@ func (s *OrderStore) Cancel(orderID, userID string) (domain.Order, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Order{}, domain.ErrNotFound
 	}
+	if isInvalidUUID(err) {
+		return domain.Order{}, domain.ErrNotFound
+	}
 	if err != nil {
 		return domain.Order{}, fmt.Errorf("lock order: %w", err)
 	}
@@ -133,22 +143,20 @@ func (s *OrderStore) Cancel(orderID, userID string) (domain.Order, error) {
 
 	// Collect items to restore before running any further statements on the tx.
 	// lib/pq does not support interleaving queries with open result sets.
-	type stockItem struct {
-		coffeeID string
-		qty      int
-	}
 	rows, err := tx.Query(
-		`SELECT coffee_id, quantity FROM order_items WHERE order_id = $1`, orderID)
+		`SELECT coffee_id, coffee_name, quantity, unit_price_cents
+		 FROM order_items WHERE order_id = $1`, orderID)
 	if err != nil {
 		return domain.Order{}, fmt.Errorf("list items: %w", err)
 	}
-	var toRestore []stockItem
+	var toRestore []domain.OrderItem
 	for rows.Next() {
-		var it stockItem
-		if err := rows.Scan(&it.coffeeID, &it.qty); err != nil {
+		var it domain.OrderItem
+		if err := rows.Scan(&it.CoffeeID, &it.CoffeeName, &it.Quantity, &it.UnitPriceCents); err != nil {
 			rows.Close()
 			return domain.Order{}, err
 		}
+		it.SubtotalCents = it.Quantity * it.UnitPriceCents
 		toRestore = append(toRestore, it)
 	}
 	if err := rows.Err(); err != nil {
@@ -159,7 +167,7 @@ func (s *OrderStore) Cancel(orderID, userID string) (domain.Order, error) {
 
 	for _, it := range toRestore {
 		if _, err := tx.Exec(
-			`UPDATE coffees SET stock_bags = stock_bags + $1 WHERE id = $2`, it.qty, it.coffeeID,
+			`UPDATE coffees SET stock_bags = stock_bags + $1 WHERE id = $2`, it.Quantity, it.CoffeeID,
 		); err != nil {
 			return domain.Order{}, fmt.Errorf("restore stock: %w", err)
 		}
@@ -174,6 +182,7 @@ func (s *OrderStore) Cancel(orderID, userID string) (domain.Order, error) {
 	if err != nil {
 		return domain.Order{}, fmt.Errorf("cancel order: %w", err)
 	}
+	o.Items = toRestore
 	return o, tx.Commit()
 }
 
@@ -187,6 +196,9 @@ func (s *OrderStore) UpdateStatus(id string, status domain.OrderStatus, tracking
 	).Scan(&o.ID, &o.UserID, &o.Status, &o.TrackingNumber, &o.TotalCents, &o.Currency, &o.CreatedAt, &o.UpdatedAt)
 
 	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Order{}, domain.ErrNotFound
+	}
+	if isInvalidUUID(err) {
 		return domain.Order{}, domain.ErrNotFound
 	}
 	if err != nil {

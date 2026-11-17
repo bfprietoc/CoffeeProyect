@@ -66,7 +66,7 @@ func (h *AdminHandler) CreateCoffee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, created)
@@ -112,7 +112,7 @@ func (h *AdminHandler) UpdateCoffee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, updated)
@@ -128,7 +128,7 @@ func (h *AdminHandler) DeleteCoffee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -151,13 +151,13 @@ func (h *AdminHandler) GetStock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 
 	movements, err := h.stockSvc.GetMovements(id)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 
@@ -205,7 +205,7 @@ func (h *AdminHandler) AdjustStock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 
@@ -231,7 +231,7 @@ func (h *AdminHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 
 	orders, err := h.orderSvc.ListAll(statusFilter, limit, offset)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, orders)
@@ -256,7 +256,7 @@ func (h *AdminHandler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, order)

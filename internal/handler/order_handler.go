@@ -24,7 +24,7 @@ func (h *OrderHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	orders, err := h.svc.ListByUser(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, orders)
@@ -44,7 +44,7 @@ func (h *OrderHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, order)
@@ -68,7 +68,7 @@ func (h *OrderHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, order)
