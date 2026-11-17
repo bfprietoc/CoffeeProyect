@@ -35,7 +35,7 @@ func (h *CartHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 
 	cart, err := h.service.GetCart(id)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, cart)
@@ -68,7 +68,7 @@ func (h *CartHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, cart)
@@ -103,7 +103,7 @@ func (h *CartHandler) SetQuantity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, cart)
@@ -128,7 +128,7 @@ func (h *CartHandler) RemoveItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, cart)
@@ -142,7 +142,7 @@ func (h *CartHandler) ClearCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.Clear(id); err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

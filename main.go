@@ -14,7 +14,6 @@ import (
 	pgstore "coffeeproyect/internal/store/postgres"
 	redistore "coffeeproyect/internal/store/redis"
 	"coffeeproyect/routes"
-	"context"
 	"log"
 	"net/http"
 	"os"
@@ -63,8 +62,10 @@ func main() {
 	stockService := service.NewStockService(stockStore, coffeeService, bus)
 	userService := service.NewUserService(userStore, jwtSecret).WithPublisher(bus)
 	cartService := service.NewCartService(guestCartStore, userCartStore, coffeeStore)
-	checkoutService := service.NewCheckoutService(userCartStore, coffeeStore, orderStore, userStore).WithPublisher(bus)
-	orderService := service.NewOrderService(orderStore).WithPublisher(bus)
+	checkoutService := service.NewCheckoutService(userCartStore, coffeeStore, orderStore, userStore).
+		WithPublisher(bus).WithCoffeeService(coffeeService)
+	orderService := service.NewOrderService(orderStore).
+		WithPublisher(bus).WithCoffeeService(coffeeService)
 
 	// buildMailer returns *smtp.Sender which may be nil. Wrapping a typed nil in an
 	// interface produces a non-nil interface value, causing nil-pointer panics inside
@@ -122,13 +123,6 @@ func main() {
 			}
 		}
 	})
-
-	// start pg_notify listener if DATABASE_URL is set
-	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
-		pgListener := event.NewPGListener(dsn)
-		pgListener.Start(context.Background())
-		log.Println("pg_notify listener started")
-	}
 
 	deps := routes.Deps{
 		Health:   handler.NewHealthHandler(),

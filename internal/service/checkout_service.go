@@ -27,6 +27,13 @@ type CheckoutService struct {
 	orderStore  store.OrderStore
 	userStore   store.UserStore
 	publisher   event.Publisher // nil = no event publishing
+	coffeeSvc   *CoffeeService  // nil = no cache invalidation
+}
+
+// WithCoffeeService enables catalog cache invalidation when stock changes.
+func (s *CheckoutService) WithCoffeeService(cs *CoffeeService) *CheckoutService {
+	s.coffeeSvc = cs
+	return s
 }
 
 func NewCheckoutService(
@@ -134,6 +141,13 @@ func (s *CheckoutService) PlaceOrder(userID, addressID string) (domain.Order, er
 	created, err := s.orderStore.Create(order)
 	if err != nil {
 		return domain.Order{}, err
+	}
+
+	// invalidate catalog cache: stock changed for the ordered coffees
+	if s.coffeeSvc != nil {
+		for _, it := range orderItems {
+			s.coffeeSvc.InvalidateProduct(it.CoffeeID)
+		}
 	}
 
 	// best-effort cart clear

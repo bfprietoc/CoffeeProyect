@@ -4,8 +4,6 @@ import (
 	"coffeeproyect/internal/domain"
 	"database/sql"
 	"fmt"
-
-	"github.com/lib/pq"
 )
 
 type WaitlistStore struct {
@@ -26,9 +24,8 @@ func (s *WaitlistStore) Subscribe(entry domain.WaitlistEntry) (domain.WaitlistEn
 	).Scan(&entry.ID, &entry.Notified, &entry.CreatedAt)
 
 	if err != nil {
-		var pqErr *pq.Error
-		if pqErr != nil { // keep compiler happy
-			_ = pqErr
+		if isInvalidUUID(err) {
+			return domain.WaitlistEntry{}, domain.ErrNotFound
 		}
 		return domain.WaitlistEntry{}, fmt.Errorf("subscribe waitlist: %w", err)
 	}

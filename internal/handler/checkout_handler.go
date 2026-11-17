@@ -26,7 +26,7 @@ func (h *CheckoutHandler) Validate(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.Validate(userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, result)
@@ -61,7 +61,7 @@ func (h *CheckoutHandler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, order)

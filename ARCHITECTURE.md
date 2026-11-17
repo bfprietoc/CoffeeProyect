@@ -47,7 +47,7 @@ API REST en Go para una tienda de café especializado. El backend gestiona catá
 │   CartStore              │                       │
 │   UserStore              │          ┌────────────▼─────────────┐
 │   WaitlistStore          │          │  Adaptadores de evento    │
-└──────────┬───────────────┘          │  pg_notify / queue        │
+└──────────┬───────────────┘          │  Bus en memoria (síncrono)│
            │                          └──────────────────────────┘
 ┌──────────▼───────────────┐
 │    Adaptadores DB/Cache   │
@@ -140,7 +140,6 @@ CoffeeProyect/
 │   ├── event/
 │   │   ├── publisher.go                   → interface Publisher
 │   │   ├── bus.go                         → Bus síncrono en memoria (Subscribe + Publish)
-│   │   ├── pg_notify.go                   → PGPublisher (pg_notify) + PGListener (LISTEN)
 │   │   └── events.go                      → topic constants + payload structs
 │   │
 │   ├── cache/

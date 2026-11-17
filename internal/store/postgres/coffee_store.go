@@ -35,6 +35,9 @@ func (s *CoffeeStore) GetByID(id string) (domain.Coffee, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Coffee{}, domain.ErrNotFound
 	}
+	if isInvalidUUID(err) {
+		return domain.Coffee{}, domain.ErrNotFound
+	}
 	return coffee, err
 }
 
@@ -159,6 +162,9 @@ func (s *CoffeeStore) Update(coffee domain.Coffee) (domain.Coffee, error) {
 		coffee.ID,
 	)
 	if err != nil {
+		if isInvalidUUID(err) {
+			return domain.Coffee{}, domain.ErrNotFound
+		}
 		return domain.Coffee{}, fmt.Errorf("update coffee: %w", err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
@@ -170,6 +176,9 @@ func (s *CoffeeStore) Update(coffee domain.Coffee) (domain.Coffee, error) {
 func (s *CoffeeStore) Delete(id string) error {
 	res, err := s.db.Exec(`DELETE FROM coffees WHERE id=$1`, id)
 	if err != nil {
+		if isInvalidUUID(err) {
+			return domain.ErrNotFound
+		}
 		return fmt.Errorf("delete coffee: %w", err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {

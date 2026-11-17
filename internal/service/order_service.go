@@ -7,8 +7,9 @@ import (
 )
 
 type OrderService struct {
-	orderStore store.OrderStore
-	publisher  event.Publisher
+	orderStore  store.OrderStore
+	publisher   event.Publisher
+	coffeeSvc   *CoffeeService // nil = no cache invalidation
 }
 
 func NewOrderService(orders store.OrderStore) *OrderService {
@@ -17,6 +18,12 @@ func NewOrderService(orders store.OrderStore) *OrderService {
 
 func (s *OrderService) WithPublisher(p event.Publisher) *OrderService {
 	s.publisher = p
+	return s
+}
+
+// WithCoffeeService enables catalog cache invalidation when stock changes.
+func (s *OrderService) WithCoffeeService(cs *CoffeeService) *OrderService {
+	s.coffeeSvc = cs
 	return s
 }
 
@@ -56,6 +63,13 @@ func (s *OrderService) Cancel(orderID, userID string) (domain.Order, error) {
 	order, err := s.orderStore.Cancel(orderID, userID)
 	if err != nil {
 		return domain.Order{}, err
+	}
+
+	// invalidate catalog cache: stock was restored for the order's coffees
+	if s.coffeeSvc != nil {
+		for _, it := range order.Items {
+			s.coffeeSvc.InvalidateProduct(it.CoffeeID)
+		}
 	}
 
 	if s.publisher != nil {

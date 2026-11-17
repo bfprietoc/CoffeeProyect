@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -18,4 +19,11 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeError(w http.ResponseWriter, status int, msg, code string) {
 	writeJSON(w, status, errorResponse{Error: msg, Code: code})
+}
+
+// writeInternalError logs the underlying cause and responds with a generic 500,
+// so internal errors are never silently swallowed.
+func writeInternalError(w http.ResponseWriter, err error) {
+	log.Printf("internal error: %v", err)
+	writeInternalError(w, err)
 }

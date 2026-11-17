@@ -24,7 +24,10 @@ func TestConcurrentCheckout_oneSucceeds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
-	defer database.Close()
+	// Registered first so it runs LAST (t.Cleanup is LIFO): the DB must stay
+	// open for the state-restoration cleanup below. A `defer` here would run
+	// before t.Cleanup and silently break the restoration.
+	t.Cleanup(func() { database.Close() })
 
 	if err := db.RunMigrations(database, "../../../migrations"); err != nil {
 		t.Fatalf("migrate: %v", err)
@@ -55,9 +58,17 @@ func TestConcurrentCheckout_oneSucceeds(t *testing.T) {
 
 	t.Cleanup(func() {
 		// order_items cascade from orders; delete orders first, then restore state.
-		database.Exec(`DELETE FROM orders WHERE user_id=$1`, testUserID)
-		database.Exec(`UPDATE coffees SET stock_bags=$1 WHERE id=$2`, origStock, coffeeID)
-		database.Exec(`DELETE FROM users WHERE id=$1`, testUserID)
+		// Errors are reported so a failed restoration fails the test instead of
+		// silently polluting the database.
+		if _, err := database.Exec(`DELETE FROM orders WHERE user_id=$1`, testUserID); err != nil {
+			t.Errorf("cleanup: delete orders: %v", err)
+		}
+		if _, err := database.Exec(`UPDATE coffees SET stock_bags=$1 WHERE id=$2`, origStock, coffeeID); err != nil {
+			t.Errorf("cleanup: restore stock: %v", err)
+		}
+		if _, err := database.Exec(`DELETE FROM users WHERE id=$1`, testUserID); err != nil {
+			t.Errorf("cleanup: delete user: %v", err)
+		}
 	})
 
 	orderStore := NewOrderStore(database)

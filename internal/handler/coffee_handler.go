@@ -30,7 +30,7 @@ func (h *CoffeeHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *CoffeeHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	coffees, err := h.service.List(filters)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+		writeInternalError(w, err)
 		return
 	}
 

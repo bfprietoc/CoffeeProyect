@@ -44,7 +44,7 @@ func (h *WaitlistHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, domain.ErrInvalidInput):
 			writeError(w, http.StatusUnprocessableEntity, err.Error(), "INVALID_INPUT")
 		default:
-			writeError(w, http.StatusInternalServerError, "internal error", "INTERNAL_ERROR")
+			writeInternalError(w, err)
 		}
 		return
 	}
