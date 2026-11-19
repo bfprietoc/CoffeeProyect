@@ -10,4 +10,5 @@ var (
 	ErrUnauthorized          = errors.New("unauthorized")
 	ErrCartEmpty             = errors.New("cart is empty")
 	ErrOrderNotCancellable   = errors.New("order cannot be cancelled in its current status")
+	ErrCoffeeHasOrders       = errors.New("coffee has orders and cannot be deleted")
 )

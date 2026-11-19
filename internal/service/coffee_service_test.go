@@ -5,6 +5,7 @@ import (
 	"coffeeproyect/internal/domain"
 	"coffeeproyect/internal/store"
 	memorystore "coffeeproyect/internal/store/memory"
+	"errors"
 	"testing"
 )
 
@@ -35,6 +36,41 @@ func (c *countingCoffeeStore) Update(coffee domain.Coffee) (domain.Coffee, error
 
 func (c *countingCoffeeStore) Delete(id string) error {
 	return c.inner.Delete(id)
+}
+
+// hasOrdersStore simula un store que rechaza el borrado de cafés vendidos.
+type hasOrdersStore struct {
+	inner *memorystore.CoffeeStore
+}
+
+func (s *hasOrdersStore) GetByID(id string) (domain.Coffee, error) {
+	return s.inner.GetByID(id)
+}
+
+func (s *hasOrdersStore) List(f store.CoffeeFilters) ([]domain.Coffee, error) {
+	return s.inner.List(f)
+}
+
+func (s *hasOrdersStore) Create(coffee domain.Coffee) (domain.Coffee, error) {
+	return s.inner.Create(coffee)
+}
+
+func (s *hasOrdersStore) Update(coffee domain.Coffee) (domain.Coffee, error) {
+	return s.inner.Update(coffee)
+}
+
+func (s *hasOrdersStore) Delete(id string) error {
+	return domain.ErrCoffeeHasOrders
+}
+
+func TestCoffeeService_Delete_propagatesErrCoffeeHasOrders(t *testing.T) {
+	svc := NewCoffeeService(&hasOrdersStore{inner: memorystore.NewCoffeeStore()})
+
+	const id = "c1a2b3c4-0001-0001-0001-000000000001"
+	err := svc.Delete(id)
+	if !errors.Is(err, domain.ErrCoffeeHasOrders) {
+		t.Fatalf("expected ErrCoffeeHasOrders, got: %v", err)
+	}
 }
 
 func TestCoffeeService_GetByID_cacheMissThenHit(t *testing.T) {

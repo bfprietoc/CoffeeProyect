@@ -173,8 +173,37 @@ func (s *CoffeeStore) Update(coffee domain.Coffee) (domain.Coffee, error) {
 	return s.GetByID(coffee.ID)
 }
 
+// Delete borra el café junto con los datos efímeros que lo referencian
+// (stock_movements, cart_items y waitlist, todos con FK NO ACTION a coffees).
+// Si el café ya fue vendido se bloquea la eliminación: destruir order_items
+// corrompería el historial de órdenes (409 en el handler).
 func (s *CoffeeStore) Delete(id string) error {
-	res, err := s.db.Exec(`DELETE FROM coffees WHERE id=$1`, id)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin delete coffee: %w", err)
+	}
+	defer tx.Rollback()
+
+	var hasOrders int
+	if err := tx.QueryRow(
+		`SELECT count(*) FROM order_items WHERE coffee_id = $1`, id,
+	).Scan(&hasOrders); err != nil {
+		if isInvalidUUID(err) {
+			return domain.ErrNotFound
+		}
+		return fmt.Errorf("check order items: %w", err)
+	}
+	if hasOrders > 0 {
+		return domain.ErrCoffeeHasOrders
+	}
+
+	for _, table := range []string{"stock_movements", "cart_items", "waitlist"} {
+		if _, err := tx.Exec(`DELETE FROM `+table+` WHERE coffee_id = $1`, id); err != nil {
+			return fmt.Errorf("delete %s: %w", table, err)
+		}
+	}
+
+	res, err := tx.Exec(`DELETE FROM coffees WHERE id=$1`, id)
 	if err != nil {
 		if isInvalidUUID(err) {
 			return domain.ErrNotFound
@@ -184,7 +213,7 @@ func (s *CoffeeStore) Delete(id string) error {
 	if n, _ := res.RowsAffected(); n == 0 {
 		return domain.ErrNotFound
 	}
-	return nil
+	return tx.Commit()
 }
 
 type scanner interface {

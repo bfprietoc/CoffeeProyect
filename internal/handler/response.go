@@ -25,5 +25,5 @@ func writeError(w http.ResponseWriter, status int, msg, code string) {
 // so internal errors are never silently swallowed.
 func writeInternalError(w http.ResponseWriter, err error) {
 	log.Printf("internal error: %v", err)
-	writeInternalError(w, err)
+	writeError(w, http.StatusInternalServerError, "internal server error", "INTERNAL_ERROR")
 }

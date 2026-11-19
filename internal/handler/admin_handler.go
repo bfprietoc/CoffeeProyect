@@ -127,6 +127,10 @@ func (h *AdminHandler) DeleteCoffee(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "coffee not found", "NOT_FOUND")
 		return
 	}
+	if errors.Is(err, domain.ErrCoffeeHasOrders) {
+		writeError(w, http.StatusConflict, "coffee has orders and cannot be deleted", "CONFLICT")
+		return
+	}
 	if err != nil {
 		writeInternalError(w, err)
 		return
