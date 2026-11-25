@@ -55,6 +55,11 @@ func Register(
 	mux.Handle("GET /orders/{id}", requireAuth(http.HandlerFunc(d.Order.GetByID)))
 	mux.Handle("POST /orders/{id}/cancel", requireAuth(http.HandlerFunc(d.Order.Cancel)))
 
+	// pagos — Web Checkout de Wompi
+	// auth + dueño del pedido; el webhook es público (verificado por checksum)
+	mux.Handle("POST /orders/{id}/payment", requireAuth(http.HandlerFunc(d.Payment.CreatePayment)))
+	mux.Handle("POST /webhooks/wompi", http.HandlerFunc(d.Payment.Webhook))
+
 	// waitlist — optionalAuth para asociar con usuario si hay token
 	mux.Handle("POST /waitlist", optionalAuth(http.HandlerFunc(d.Waitlist.Subscribe)))
 
