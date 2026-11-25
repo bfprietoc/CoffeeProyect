@@ -142,6 +142,10 @@ DOCKER_HOST="unix://$HOME/.colima/default/docker.sock" docker compose down -v
 | `REDIS_URL` | URL de Redis | usa in-memory |
 | `JWT_SECRET` | Secreto para firmar JWT | `dev-secret-change-in-production` |
 | `ADMIN_API_KEY` | API key para endpoints `/admin/*` | admin endpoints deshabilitados |
+| `WOMPI_PUBLIC_KEY` | Llave pública de comercio Wompi (`pub_test_…`) | pagos deshabilitados (503) |
+| `WOMPI_INTEGRITY_SECRET` | Secreto de integridad Wompi (server-side) | pagos deshabilitados |
+| `WOMPI_EVENT_SECRET` | Secreto de eventos Wompi (distinto al de integridad) | pagos deshabilitados |
+| `PUBLIC_BASE_URL` | URL pública del sitio (redirect del checkout) | pagos deshabilitados |
 | `GOOGLE_CLIENT_ID` | OAuth Client ID de Google para `POST /auth/google` | login con Google deshabilitado (503) |
 | `SMTP_HOST` | Host SMTP para emails | emails deshabilitados |
 
@@ -150,6 +154,33 @@ Valor local por defecto:
 DATABASE_URL=postgres://coffee:coffee@localhost:5432/coffeedb?sslmode=disable
 REDIS_URL=redis://localhost:6379
 ```
+
+### Pagos (Wompi Web Checkout)
+
+Los pagos usan el **Web Checkout** de Wompi (sin PCI scope en nuestra app): el
+backend valida el pedido y firma los parámetros del formulario de Wompi
+(nunca expone secretos), el cliente paga en el portal de Wompi y el backend
+sabe el resultado vía **webhook firmado** (`wompi_hash` no aplica; el checksum
+del evento se calcula del propio evento).
+
+- `POST /orders/{id}/payment` (auth, dueño) — valida el pedido, genera una
+  referencia única por intento (`{order_id}-{unix}`) y devuelve los parámetros
+  del checkout (`{publicKey, reference, amountInCents, currency, signature,
+  redirectUrl, customerEmail}`). El frontend renderiza el formulario de
+  Wompi con esos valores.
+- `POST /webhooks/wompi` (público, verificado por checksum) — valida la
+  firma del evento (SHA256 de las propiedades del evento + timestamp +
+  secreto de eventos), marca el pedido `paid`/`failed` (idempotente por
+  referencia) y responde 200 (Wompi reintenta hasta 3 veces en 24h ante
+  cualquier otro status).
+- Admin: un pedido solo puede pasar a `processing` si está `paid`
+  (`PAYMENT_REQUIRED`, 422). Los pedidos creados antes de esta feature
+  migran como `paid` (se pagaban fuera del flujo transaccional).
+- Errores: `PAYMENTS_DISABLED` (503, faltan credenciales), `NOT_FOUND` (404),
+  `PAYMENT_ALREADY_PAID` (409), `PAYMENT_UNAVAILABLE` (422, pedido cancelado).
+
+**Regla:** el frontend NUNCA arma la firma de integridad; el backend la
+computa siempre. Ver `internal/payment/wompi.go`.
 
 ---
 
