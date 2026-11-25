@@ -63,6 +63,63 @@ func (s *UserService) Register(name, email, password string) (auth.TokenPair, do
 	return tokens, user, nil
 }
 
+// RegisterOrLoginWithGoogle logs in with a verified Google identity, creating
+// the user on first use. Users created this way have no password (empty
+// hash): they can only sign in through Google until they set a password.
+func (s *UserService) RegisterOrLoginWithGoogle(email, name string) (auth.TokenPair, domain.User, error) {
+	email = strings.TrimSpace(strings.ToLower(email))
+	name = strings.TrimSpace(name)
+
+	if email == "" {
+		return auth.TokenPair{}, domain.User{}, domain.ErrInvalidInput
+	}
+
+	user, err := s.store.GetByEmail(email)
+	if errors.Is(err, domain.ErrNotFound) {
+		if name == "" {
+			name = displayNameFromEmail(email)
+		}
+		user, err = s.store.Create(domain.User{
+			Name:         name,
+			Email:        email,
+			PasswordHash: "", // sin contraseña: solo login con Google
+		})
+		if err != nil {
+			return auth.TokenPair{}, domain.User{}, err
+		}
+		if s.publisher != nil {
+			_ = s.publisher.Publish(event.TopicUserRegistered, event.UserPayload{
+				UserID: user.ID,
+				Email:  user.Email,
+				Name:   user.Name,
+			})
+		}
+	} else if err != nil {
+		return auth.TokenPair{}, domain.User{}, fmt.Errorf("get user by email: %w", err)
+	}
+
+	tokens, err := auth.GenerateTokenPair(user.ID, user.Email, s.jwtSecret)
+	if err != nil {
+		return auth.TokenPair{}, domain.User{}, fmt.Errorf("generate tokens: %w", err)
+	}
+
+	return tokens, user, nil
+}
+
+// displayNameFromEmail derives a display name from the local part of an
+// email ("juan.perez@example.com" → "Juan.perez"). Fallback when Google
+// does not send a name claim.
+func displayNameFromEmail(email string) string {
+	local := email
+	if i := strings.IndexByte(email, '@'); i > 0 {
+		local = email[:i]
+	}
+	if local == "" {
+		return email
+	}
+	return strings.ToUpper(local[:1]) + local[1:]
+}
+
 func (s *UserService) Login(email, password string) (auth.TokenPair, domain.User, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 
