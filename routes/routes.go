@@ -13,6 +13,7 @@ type Deps struct {
 	Cart     *handler.CartHandler
 	Checkout *handler.CheckoutHandler
 	Order    *handler.OrderHandler
+	Payment  *handler.PaymentHandler
 	Admin    *handler.AdminHandler
 	Waitlist *handler.WaitlistHandler
 }

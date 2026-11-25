@@ -7,9 +7,9 @@ import (
 )
 
 type OrderService struct {
-	orderStore  store.OrderStore
-	publisher   event.Publisher
-	coffeeSvc   *CoffeeService // nil = no cache invalidation
+	orderStore store.OrderStore
+	publisher  event.Publisher
+	coffeeSvc  *CoffeeService // nil = no cache invalidation
 }
 
 func NewOrderService(orders store.OrderStore) *OrderService {
@@ -40,6 +40,18 @@ func (s *OrderService) ListAll(statusFilter string, limit, offset int) ([]domain
 }
 
 func (s *OrderService) UpdateStatus(id string, status domain.OrderStatus, trackingNumber *string) (domain.Order, error) {
+	// Business rule: an order can only enter the queue for preparation once
+	// it has been paid. (Orders created before payment tracking are marked
+	// paid by migration, so existing flows keep working.)
+	if status == domain.OrderStatusProcessing {
+		current, err := s.orderStore.GetByID(id)
+		if err != nil {
+			return domain.Order{}, err
+		}
+		if current.PaymentStatus != domain.PaymentStatusPaid {
+			return domain.Order{}, domain.ErrPaymentRequired
+		}
+	}
 	order, err := s.orderStore.UpdateStatus(id, status, trackingNumber)
 	if err != nil {
 		return domain.Order{}, err

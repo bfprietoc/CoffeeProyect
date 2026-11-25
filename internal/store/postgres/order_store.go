@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type OrderStore struct {
@@ -61,6 +62,7 @@ func (s *OrderStore) Create(order domain.Order) (domain.Order, error) {
 		return domain.Order{}, fmt.Errorf("insert order: %w", err)
 	}
 	order.Status = domain.OrderStatusConfirmed
+	order.PaymentStatus = domain.PaymentStatusPending
 
 	for i, item := range order.Items {
 		err := tx.QueryRow(`
@@ -176,9 +178,13 @@ func (s *OrderStore) Cancel(orderID, userID string) (domain.Order, error) {
 	var o domain.Order
 	err = tx.QueryRow(
 		`UPDATE orders SET status = 'cancelled' WHERE id = $1
-		 RETURNING id, user_id, status, total_cents, currency, created_at, updated_at`,
+		 RETURNING id, user_id, status, total_cents, currency, created_at, updated_at,
+		           payment_status, payment_provider, payment_reference,
+		           payment_transaction_id, paid_at`,
 		orderID,
-	).Scan(&o.ID, &o.UserID, &o.Status, &o.TotalCents, &o.Currency, &o.CreatedAt, &o.UpdatedAt)
+	).Scan(&o.ID, &o.UserID, &o.Status, &o.TotalCents, &o.Currency, &o.CreatedAt, &o.UpdatedAt,
+		&o.PaymentStatus, &o.PaymentProvider, &o.PaymentReference,
+		&o.PaymentTransactionID, &o.PaidAt)
 	if err != nil {
 		return domain.Order{}, fmt.Errorf("cancel order: %w", err)
 	}
@@ -191,9 +197,14 @@ func (s *OrderStore) UpdateStatus(id string, status domain.OrderStatus, tracking
 	err := s.db.QueryRow(`
 		UPDATE orders SET status = $1, tracking_number = $2
 		WHERE id = $3
-		RETURNING id, user_id, status, tracking_number, total_cents, currency, created_at, updated_at`,
+		RETURNING id, user_id, status, tracking_number, total_cents, currency,
+		          payment_status, payment_provider, payment_reference,
+		          payment_transaction_id, paid_at, created_at, updated_at`,
 		string(status), trackingNumber, id,
-	).Scan(&o.ID, &o.UserID, &o.Status, &o.TrackingNumber, &o.TotalCents, &o.Currency, &o.CreatedAt, &o.UpdatedAt)
+	).Scan(&o.ID, &o.UserID, &o.Status, &o.TrackingNumber, &o.TotalCents, &o.Currency,
+		&o.PaymentStatus, &o.PaymentProvider, &o.PaymentReference,
+		&o.PaymentTransactionID, &o.PaidAt,
+		&o.CreatedAt, &o.UpdatedAt)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Order{}, domain.ErrNotFound
@@ -224,6 +235,8 @@ func (s *OrderStore) scanOrders(whereClause string, args ...any) ([]domain.Order
 		SELECT o.id, o.user_id,
 		       o.shipping_street, o.shipping_city, o.shipping_department, o.shipping_country,
 		       o.total_cents, o.currency, o.status, o.tracking_number,
+		       o.payment_status, o.payment_provider, o.payment_reference,
+		       o.payment_transaction_id, o.paid_at,
 		       o.created_at, o.updated_at
 		FROM orders o %s`, whereClause)
 
@@ -240,6 +253,8 @@ func (s *OrderStore) scanOrders(whereClause string, args ...any) ([]domain.Order
 			&o.ID, &o.UserID,
 			&o.ShippingStreet, &o.ShippingCity, &o.ShippingDept, &o.ShippingCountry,
 			&o.TotalCents, &o.Currency, &o.Status, &o.TrackingNumber,
+			&o.PaymentStatus, &o.PaymentProvider, &o.PaymentReference,
+			&o.PaymentTransactionID, &o.PaidAt,
 			&o.CreatedAt, &o.UpdatedAt,
 		); err != nil {
 			return nil, err
@@ -280,4 +295,80 @@ func (s *OrderStore) loadItems(orderID string) ([]domain.OrderItem, error) {
 		items = append(items, it)
 	}
 	return items, rows.Err()
+}
+
+// GetByPaymentReference finds an order by the attempt reference stored for it.
+func (s *OrderStore) GetByPaymentReference(reference string) (domain.Order, error) {
+	o, err := s.scanOrder(`WHERE o.payment_reference = $1`, reference)
+	if isInvalidUUID(err) {
+		return domain.Order{}, domain.ErrNotFound
+	}
+	return o, err
+}
+
+// UpdatePayment atomically replaces the payment fields of an order.
+func (s *OrderStore) UpdatePayment(id string, patch domain.PaymentPatch) (domain.Order, error) {
+	setClauses := make([]string, 0, 5)
+	args := make([]any, 0, 6)
+	next := 1
+
+	if patch.Reference != nil {
+		setClauses = append(setClauses, fmt.Sprintf("payment_reference = $%d", next))
+		args = append(args, *patch.Reference)
+		next++
+	}
+	if patch.TransactionID != nil {
+		setClauses = append(setClauses, fmt.Sprintf("payment_transaction_id = $%d", next))
+		args = append(args, *patch.TransactionID)
+		next++
+	}
+	if patch.Provider != nil {
+		setClauses = append(setClauses, fmt.Sprintf("payment_provider = $%d", next))
+		args = append(args, *patch.Provider)
+		next++
+	}
+	if patch.SetStatus {
+		setClauses = append(setClauses, fmt.Sprintf("payment_status = $%d", next))
+		args = append(args, string(patch.Status))
+		next++
+	}
+	if patch.SetPaidAt {
+		// explicit: copy even when the caller wants to clear the timestamp
+		if patch.PaidAt != nil {
+			setClauses = append(setClauses, fmt.Sprintf("paid_at = $%d", next))
+			args = append(args, *patch.PaidAt)
+			next++
+		} else {
+			// NULL literal consumes no placeholder
+			setClauses = append(setClauses, "paid_at = NULL")
+		}
+	}
+	if len(setClauses) == 0 {
+		return s.GetByID(id)
+	}
+
+	args = append(args, id)
+	var o domain.Order
+	err := s.db.QueryRow(fmt.Sprintf(`
+		UPDATE orders SET %s, updated_at = now()
+		WHERE id = $%d
+		RETURNING id, user_id, status, total_cents, currency, created_at, updated_at,
+		          payment_status, payment_provider, payment_reference,
+		          payment_transaction_id, paid_at`,
+		strings.Join(setClauses, ", "), next), args...,
+	).Scan(&o.ID, &o.UserID, &o.Status, &o.TotalCents, &o.Currency, &o.CreatedAt, &o.UpdatedAt,
+		&o.PaymentStatus, &o.PaymentProvider, &o.PaymentReference,
+		&o.PaymentTransactionID, &o.PaidAt)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Order{}, domain.ErrNotFound
+	}
+	if isInvalidUUID(err) {
+		return domain.Order{}, domain.ErrNotFound
+	}
+	if err != nil {
+		return domain.Order{}, fmt.Errorf("update payment: %w", err)
+	}
+	// Reuse scanOrder so the returned order carries shipping + items too.
+	return s.GetByID(o.ID)
 }

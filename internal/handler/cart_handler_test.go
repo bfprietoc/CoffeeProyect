@@ -233,4 +233,3 @@ func TestClearCart_success(t *testing.T) {
 		t.Error("expected empty cart after clear")
 	}
 }
-

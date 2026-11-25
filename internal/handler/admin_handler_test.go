@@ -2,12 +2,12 @@ package handler
 
 import (
 	"bytes"
+	memorycache "coffeeproyect/internal/cache/memory"
 	"coffeeproyect/internal/domain"
+	"coffeeproyect/internal/event"
 	"coffeeproyect/internal/middleware"
 	"coffeeproyect/internal/service"
 	memstore "coffeeproyect/internal/store/memory"
-	memorycache "coffeeproyect/internal/cache/memory"
-	"coffeeproyect/internal/event"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -143,15 +143,15 @@ func TestAdmin_UpdateOrderStatus(t *testing.T) {
 func TestAdmin_CreateCoffee_success(t *testing.T) {
 	mux, _ := newAdminMux()
 	rec := adminReq(mux, http.MethodPost, "/admin/coffees", map[string]any{
-		"name":          "Nuevo Café Test",
-		"process":       "washed",
-		"roast_level":   "medium",
-		"price_cents":   6000000,
+		"name":           "Nuevo Café Test",
+		"process":        "washed",
+		"roast_level":    "medium",
+		"price_cents":    6000000,
 		"bag_size_grams": 250,
-		"producer_name": "Test Producer",
-		"farm_name":     "Test Farm",
-		"farm_country":  "Colombia",
-		"farm_region":   "Tolima",
+		"producer_name":  "Test Producer",
+		"farm_name":      "Test Farm",
+		"farm_country":   "Colombia",
+		"farm_region":    "Tolima",
 	}, testAdminKey)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d — %s", rec.Code, rec.Body)
@@ -178,10 +178,10 @@ func TestAdmin_CreateCoffee_missingRequiredFields(t *testing.T) {
 func TestAdmin_UpdateCoffee_success(t *testing.T) {
 	mux, _ := newAdminMux()
 	rec := adminReq(mux, http.MethodPut, "/admin/coffees/"+testCoffeeID, map[string]any{
-		"name":          "El Paraíso 92 Actualizado",
-		"process":       "anaerobic",
-		"roast_level":   "light",
-		"price_cents":   9000000,
+		"name":           "El Paraíso 92 Actualizado",
+		"process":        "anaerobic",
+		"roast_level":    "light",
+		"price_cents":    9000000,
 		"bag_size_grams": 250,
 	}, testAdminKey)
 	if rec.Code != http.StatusOK {

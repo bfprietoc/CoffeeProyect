@@ -35,6 +35,15 @@ func main() {
 	if adminKey == "" {
 		log.Println("WARNING: ADMIN_API_KEY not set — admin endpoints are disabled")
 	}
+	paymentCfg := service.PaymentConfig{
+		PublicKey:       os.Getenv("WOMPI_PUBLIC_KEY"),
+		IntegritySecret: os.Getenv("WOMPI_INTEGRITY_SECRET"),
+		EventSecret:     os.Getenv("WOMPI_EVENT_SECRET"),
+		BaseURL:         os.Getenv("PUBLIC_BASE_URL"),
+	}
+	if !service.PaymentEnabled(paymentCfg) {
+		log.Println("WARNING: WOMPI_* / PUBLIC_BASE_URL not fully set — payments are disabled")
+	}
 
 	rc := buildRedisClient()
 	coffeeStore, userStore, guestCartStore, userCartStore, orderStore, stockStore, waitlistStore := buildStores(rc)
@@ -74,6 +83,7 @@ func main() {
 	if raw := buildMailer(); raw != nil {
 		emailSender = raw
 	}
+	paymentService := service.NewPaymentService(orderStore, userStore, paymentCfg)
 	waitlistService := service.NewWaitlistService(waitlistStore, coffeeStore, emailSender, bus)
 	notificationService := service.NewNotificationService(emailSender, orderStore, userStore)
 
@@ -132,6 +142,7 @@ func main() {
 		Cart:     handler.NewCartHandler(cartService),
 		Checkout: handler.NewCheckoutHandler(checkoutService),
 		Order:    handler.NewOrderHandler(orderService),
+		Payment:  handler.NewPaymentHandler(paymentService),
 		Admin:    handler.NewAdminHandler(stockService, orderService).WithCoffeeService(coffeeService),
 		Waitlist: handler.NewWaitlistHandler(waitlistService),
 	}
