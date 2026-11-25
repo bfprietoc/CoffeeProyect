@@ -142,6 +142,7 @@ DOCKER_HOST="unix://$HOME/.colima/default/docker.sock" docker compose down -v
 | `REDIS_URL` | URL de Redis | usa in-memory |
 | `JWT_SECRET` | Secreto para firmar JWT | `dev-secret-change-in-production` |
 | `ADMIN_API_KEY` | API key para endpoints `/admin/*` | admin endpoints deshabilitados |
+| `GOOGLE_CLIENT_ID` | OAuth Client ID de Google para `POST /auth/google` | login con Google deshabilitado (503) |
 | `SMTP_HOST` | Host SMTP para emails | emails deshabilitados |
 
 Valor local por defecto:
