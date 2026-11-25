@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 var orderSeq int64
@@ -32,6 +33,9 @@ func (s *OrderStore) Create(order domain.Order) (domain.Order, error) {
 	defer s.mu.Unlock()
 
 	order.ID = nextOrderID()
+	if order.PaymentStatus == "" {
+		order.PaymentStatus = domain.PaymentStatusPending
+	}
 	for i := range order.Items {
 		order.Items[i].ID = nextItemID()
 		order.Items[i].SubtotalCents = order.Items[i].Quantity * order.Items[i].UnitPriceCents
@@ -118,6 +122,47 @@ func (s *OrderStore) UpdateStatus(id string, status domain.OrderStatus, tracking
 	}
 	o.Status = status
 	o.TrackingNumber = trackingNumber
+	s.orders[id] = o
+	return o, nil
+}
+
+// UpdatePayment replaces the payment fields of one order.
+// A nil field keeps the current value (except PaidAt, which is set to nil
+// when the caller passes paid=false semantics via SetPaidAt(false, ...)).
+func (s *OrderStore) GetByPaymentReference(reference string) (domain.Order, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, o := range s.orders {
+		if o.PaymentReference != nil && *o.PaymentReference == reference {
+			return o, nil
+		}
+	}
+	return domain.Order{}, domain.ErrNotFound
+}
+
+func (s *OrderStore) UpdatePayment(id string, patch domain.PaymentPatch) (domain.Order, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	o, ok := s.orders[id]
+	if !ok {
+		return domain.Order{}, domain.ErrNotFound
+	}
+	if patch.Reference != nil {
+		o.PaymentReference = patch.Reference
+	}
+	if patch.TransactionID != nil {
+		o.PaymentTransactionID = patch.TransactionID
+	}
+	if patch.Provider != nil {
+		o.PaymentProvider = patch.Provider
+	}
+	if patch.SetStatus {
+		o.PaymentStatus = patch.Status
+	}
+	if patch.SetPaidAt {
+		o.PaidAt = patch.PaidAt
+	}
+	o.UpdatedAt = time.Now().UTC()
 	s.orders[id] = o
 	return o, nil
 }

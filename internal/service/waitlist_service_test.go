@@ -164,4 +164,3 @@ func TestWaitlistService_nilDeps(t *testing.T) {
 		t.Fatalf("unexpected error in NotifyAll with nil email sender: %v", err)
 	}
 }
-

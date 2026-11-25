@@ -259,6 +259,10 @@ func (h *AdminHandler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotFound, "order not found", "NOT_FOUND")
 		return
 	}
+	if errors.Is(err, domain.ErrPaymentRequired) {
+		writeError(w, http.StatusUnprocessableEntity, "order must be paid before processing", "PAYMENT_REQUIRED")
+		return
+	}
 	if err != nil {
 		writeInternalError(w, err)
 		return

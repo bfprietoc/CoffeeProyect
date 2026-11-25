@@ -5,6 +5,7 @@ import (
 	memstore "coffeeproyect/internal/store/memory"
 	"errors"
 	"testing"
+	"time"
 )
 
 func setupOrderService() (*OrderService, *memstore.OrderStore, string) {
@@ -93,4 +94,41 @@ func TestOrderService_Cancel_notCancellable(t *testing.T) {
 	if !errors.Is(err, domain.ErrOrderNotCancellable) {
 		t.Errorf("expected ErrOrderNotCancellable, got %v", err)
 	}
+}
+
+func TestOrderService_UpdateStatus_processingRequiresPayment(t *testing.T) {
+	svc, orderStore, orderID := setupOrderService()
+
+	t.Run("unpaid order rejected", func(t *testing.T) {
+		_, err := svc.UpdateStatus(orderID, domain.OrderStatusProcessing, nil)
+		if !errors.Is(err, domain.ErrPaymentRequired) {
+			t.Errorf("expected ErrPaymentRequired, got %v", err)
+		}
+	})
+
+	t.Run("paid order accepted", func(t *testing.T) {
+		paidAt := time.Now().UTC()
+		_, err := orderStore.UpdatePayment(orderID, domain.PaymentPatch{
+			SetStatus: true, Status: domain.PaymentStatusPaid, SetPaidAt: true, PaidAt: &paidAt,
+		})
+		if err != nil {
+			t.Fatalf("mark paid: %v", err)
+		}
+		o, err := svc.UpdateStatus(orderID, domain.OrderStatusProcessing, nil)
+		if err != nil {
+			t.Fatalf("paid order must advance: %v", err)
+		}
+		if o.Status != domain.OrderStatusProcessing {
+			t.Errorf("expected processing, got %s", o.Status)
+		}
+	})
+
+	t.Run("non-processing transitions skip the guard", func(t *testing.T) {
+		// fresh order (unpaid): shipping/cancel behave as before
+		_, err := svc.UpdateStatus(orderID, domain.OrderStatusShipped, nil)
+		// shipped is allowed even though the order was paid (not required by rule)
+		if err != nil {
+			t.Errorf("non-processing transition rejected: %v", err)
+		}
+	})
 }

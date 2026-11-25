@@ -20,4 +20,10 @@ type OrderStore interface {
 
 	// UpdateStatus is for admin use. trackingNumber may be nil.
 	UpdateStatus(id string, status domain.OrderStatus, trackingNumber *string) (domain.Order, error)
+
+	// GetByPaymentReference finds an order by its payment attempt reference.
+	GetByPaymentReference(reference string) (domain.Order, error)
+
+	// UpdatePayment replaces the payment fields of an order (see domain.PaymentPatch).
+	UpdatePayment(id string, patch domain.PaymentPatch) (domain.Order, error)
 }
