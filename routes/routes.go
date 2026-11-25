@@ -32,6 +32,7 @@ func Register(
 	mux.HandleFunc("POST /auth/register", d.Auth.Register)
 	mux.HandleFunc("POST /auth/login", d.Auth.Login)
 	mux.HandleFunc("POST /auth/refresh", d.Auth.Refresh)
+	mux.HandleFunc("POST /auth/google", d.Auth.GoogleLogin)
 
 	// carrito — funciona para invitados (X-Session-ID) y usuarios (JWT)
 	// optionalAuth inyecta userID en context si hay token válido, sin bloquear si no lo hay

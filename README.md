@@ -146,6 +146,7 @@ DOCKER_HOST="unix://$HOME/.colima/default/docker.sock" docker compose down -v
 | `WOMPI_INTEGRITY_SECRET` | Secreto de integridad Wompi (server-side) | pagos deshabilitados |
 | `WOMPI_EVENT_SECRET` | Secreto de eventos Wompi (distinto al de integridad) | pagos deshabilitados |
 | `PUBLIC_BASE_URL` | URL pública del sitio (redirect del checkout) | pagos deshabilitados |
+| `GOOGLE_CLIENT_ID` | OAuth Client ID de Google para `POST /auth/google` | login con Google deshabilitado (503) |
 | `SMTP_HOST` | Host SMTP para emails | emails deshabilitados |
 
 Valor local por defecto:

@@ -45,6 +45,11 @@ func main() {
 		log.Println("WARNING: WOMPI_* / PUBLIC_BASE_URL not fully set — payments are disabled")
 	}
 
+	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
+	if googleClientID == "" {
+		log.Println("WARNING: GOOGLE_CLIENT_ID not set — Google login is disabled")
+	}
+
 	rc := buildRedisClient()
 	coffeeStore, userStore, guestCartStore, userCartStore, orderStore, stockStore, waitlistStore := buildStores(rc)
 
@@ -137,7 +142,7 @@ func main() {
 	deps := routes.Deps{
 		Health:   handler.NewHealthHandler(),
 		Coffee:   handler.NewCoffeeHandler(coffeeService),
-		Auth:     handler.NewAuthHandler(userService, cartService),
+		Auth:     handler.NewAuthHandler(userService, cartService).WithGoogleClientID(googleClientID),
 		User:     handler.NewUserHandler(userService),
 		Cart:     handler.NewCartHandler(cartService),
 		Checkout: handler.NewCheckoutHandler(checkoutService),
