@@ -2,8 +2,12 @@ package memory
 
 import (
 	"coffeeproyect/internal/domain"
+	"fmt"
 	"sync"
+	"sync/atomic"
 )
+
+var userSeq int64
 
 type UserStore struct {
 	mu        sync.RWMutex
@@ -109,15 +113,8 @@ func (s *UserStore) DeleteAddress(id, userID string) error {
 }
 
 func newID() string {
-	// simple sequential-ish ID for testing — real IDs come from postgres
-	return "mem-" + randomHex(8)
-}
-
-func randomHex(n int) string {
-	const chars = "0123456789abcdef"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = chars[i%len(chars)]
-	}
-	return string(b)
+	// simple sequential-ish ID for testing — real IDs come from postgres.
+	// (antes randomHex devolvía una cantidad fija — todos los usuarios y
+	// direcciones recibían el mismo ID, filtrando datos entre usuarios.)
+	return fmt.Sprintf("mem-%d", atomic.AddInt64(&userSeq, 1))
 }

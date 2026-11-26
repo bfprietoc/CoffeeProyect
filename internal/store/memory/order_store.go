@@ -2,20 +2,31 @@ package memory
 
 import (
 	"coffeeproyect/internal/domain"
+	"crypto/rand"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
-var orderSeq int64
+// newUUID genera un UUID v4 con crypto/rand — el mismo formato que usa la
+// base (postgres) para los IDs en producción, para que el modo in-memory
+// se comporte como producción (URLs, regex de E2E, etc.).
+func newUUID() string {
+	var b [16]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		panic(fmt.Sprintf("crypto/rand: %v", err))
+	}
+	b[6] = (b[6] & 0x0f) | 0x40 // version 4
+	b[8] = (b[8] & 0x3f) | 0x80 // variant 10
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}
 
 func nextOrderID() string {
-	return fmt.Sprintf("mem-order-%d", atomic.AddInt64(&orderSeq, 1))
+	return newUUID()
 }
 
 func nextItemID() string {
-	return fmt.Sprintf("mem-item-%d", atomic.AddInt64(&orderSeq, 1))
+	return newUUID()
 }
 
 type OrderStore struct {
