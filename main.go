@@ -42,7 +42,7 @@ func main() {
 		BaseURL:         os.Getenv("PUBLIC_BASE_URL"),
 	}
 	if !service.PaymentEnabled(paymentCfg) {
-		log.Println("WARNING: WOMPI_* / PUBLIC_BASE_URL not fully set — payments are disabled")
+		log.Println("WARNING: WOMPI_* not fully set — payments are disabled (PUBLIC_BASE_URL is optional)")
 	}
 
 	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")

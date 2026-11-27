@@ -375,3 +375,50 @@ func TestHandleWebhook_nonTerminalStatusIgnored(t *testing.T) {
 		t.Errorf("expected pending, got %s", o.PaymentStatus)
 	}
 }
+
+// If BaseURL is empty the checkout form gets an empty redirect URL and
+// Wompi shows its own success page (the webhook is the source of truth).
+func TestCreateCheckout_withoutBaseURL_omitsRedirect(t *testing.T) {
+	svc := NewPaymentService(memstore.NewOrderStore(), memstore.NewUserStore(), PaymentConfig{
+		PublicKey:       "pub_test_xxx",
+		IntegritySecret: "prod_integrity_test",
+		EventSecret:     "prod_events_test",
+		BaseURL:         "",
+	})
+	_ = svc // construction smoke check
+	orderStore := memstore.NewOrderStore()
+	userStore := memstore.NewUserStore()
+	user, err := userStore.Create(domain.User{Email: "no-base@example.com", Name: "No Base"})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	order := domain.Order{
+		UserID:          user.ID,
+		Status:          domain.OrderStatusConfirmed,
+		TotalCents:      1000,
+		Currency:        "COP",
+		ShippingStreet:  "Calle 1",
+		ShippingCity:    "Bogotá",
+		ShippingDept:    "Cundinamarca",
+		ShippingCountry: "CO",
+		Items: []domain.OrderItem{
+			{CoffeeID: availCoffeeID, CoffeeName: "El Paraíso 92", Quantity: 1, UnitPriceCents: 1000},
+		},
+	}
+	created, err := orderStore.Create(order)
+	if err != nil {
+		t.Fatalf("create order: %v", err)
+	}
+	svc = NewPaymentService(orderStore, userStore, PaymentConfig{
+		PublicKey:       "pub_test_xxx",
+		IntegritySecret: "prod_integrity_test",
+		EventSecret:     "prod_events_test",
+	})
+	params, err := svc.CreateCheckout(created.ID, user.ID)
+	if err != nil {
+		t.Fatalf("CreateCheckout: %v", err)
+	}
+	if params.RedirectURL != "" {
+		t.Errorf("redirect URL must be empty when no BaseURL is set, got %q", params.RedirectURL)
+	}
+}
