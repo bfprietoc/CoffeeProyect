@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"coffeeproyect/internal/domain"
 	"coffeeproyect/internal/payment"
 	"coffeeproyect/internal/store"
@@ -38,7 +39,7 @@ func NewPaymentService(orders store.OrderStore, users store.UserStore, cfg Payme
 
 // Enabled reports whether the payment integration is configured.
 func (s *PaymentService) Enabled() bool {
-	return s.cfg.PublicKey != "" && s.cfg.IntegritySecret != "" && s.cfg.EventSecret != "" && s.cfg.BaseURL != ""
+	return s.cfg.PublicKey != "" && s.cfg.IntegritySecret != "" && s.cfg.EventSecret != ""
 }
 
 // CreateCheckout validates the order and returns the Web Checkout params for
@@ -80,14 +81,20 @@ func (s *PaymentService) CreateCheckout(orderID, userID string) (payment.Checkou
 		return payment.CheckoutParams{}, err
 	}
 
-	base := strings.TrimSuffix(s.cfg.BaseURL, "/")
+	// BaseURL is optional: when empty the checkout form omits the redirect
+	// URL and Wompi shows its own success page (the webhook is the source of
+	// truth regardless). When set, the customer lands back on our order.
+	redirectURL := ""
+	if base := strings.TrimSuffix(s.cfg.BaseURL, "/"); base != "" {
+		redirectURL = fmt.Sprintf("%s/orders/%s?payment=1", base, newOrder.ID)
+	}
 	return payment.CheckoutParams{
 		PublicKey:     s.cfg.PublicKey,
 		Reference:     reference,
 		AmountInCents: newOrder.TotalCents,
 		Currency:      newOrder.Currency,
 		Signature:     payment.IntegritySignature(reference, newOrder.TotalCents, newOrder.Currency, s.cfg.IntegritySecret),
-		RedirectURL:   fmt.Sprintf("%s/orders/%s?payment=1", base, newOrder.ID),
+		RedirectURL:   redirectURL,
 		CustomerEmail: user.Email,
 	}, nil
 }
@@ -103,6 +110,27 @@ func (s *PaymentService) HandleWebhook(rawBody []byte) error {
 
 	evt, err := payment.VerifyAndParseEvent(rawBody, s.cfg.EventSecret)
 	if err != nil {
+		// Debug: log the exact failure (never the secret) to diagnose silent
+		// 401s from the Wompi dashboard.
+		var evtInfo map[string]any
+		_ = json.Unmarshal(rawBody, &evtInfo)
+		props := ""
+		if sig, ok := evtInfo["signature"].(map[string]any); ok {
+			if list, ok := sig["properties"].([]any); ok {
+				strs := make([]string, 0, len(list))
+				for _, it := range list {
+					if s, ok := it.(string); ok {
+						strs = append(strs, s)
+					}
+				}
+				props = strings.Join(strs, ",")
+			}
+		}
+		ts := ""
+		if t, ok := evtInfo["timestamp"]; ok {
+			ts = fmt.Sprintf("%v", t)
+		}
+		log.Printf("wompi webhook: verification failed: %v (event=%s properties=%s timestamp=%s)", err, evtInfo["event"], props, ts)
 		return fmt.Errorf("webhook signature: %w", err)
 	}
 
@@ -174,5 +202,5 @@ func (s *PaymentService) HandleWebhook(rawBody []byte) error {
 // Used by main.go to log a startup warning (the service also re-checks on
 // every request).
 func PaymentEnabled(cfg PaymentConfig) bool {
-	return cfg.PublicKey != "" && cfg.IntegritySecret != "" && cfg.EventSecret != "" && cfg.BaseURL != ""
+	return cfg.PublicKey != "" && cfg.IntegritySecret != "" && cfg.EventSecret != ""
 }
