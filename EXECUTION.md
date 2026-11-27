@@ -1,5 +1,10 @@
 # CoffeeProyect — Guía de Ejecución
 
+> 📖 **Guía manual completa (front + back):** `../CoffeeProyect-web/MANUAL_GUIDE.md`
+> — incluye la arquitectura, todas las variables de entorno, el arranque a mano,
+> los túneles, y la referencia de endpoints con payloads. Este archivo es el
+> runbook del backend enfocado al flujo de datos.
+
 ## Flujos de prueba rápida
 
 ### Opción A — Sin Docker (in-memory, más rápido)
@@ -308,6 +313,41 @@ curl -X POST http://localhost:8080/auth/refresh \
   -d '{"refresh_token":"<refresh_token>"}'
 ```
 
+### Google Login
+
+```bash
+# ID token de Google (enviado desde el frontend tras el popup de Google Identity Services)
+curl -X POST http://localhost:8080/auth/google \
+  -H "Content-Type: application/json" \
+  -d '{"credential":"<id_token>"}'
+
+# → {"user": {...}, "tokens": {"access_token":"...","refresh_token":"...","token_type":"Bearer","expires_in":...}}
+# 503 si GOOGLE_CLIENT_ID no está configurado · 401 si el token es inválido
+# Mismo flujo de merge de carrito que login (header X-Session-ID)
+```
+
+### Pagos Wompi (Feature B)
+
+```bash
+# 1. Payment params — sin body, responde los ocultos del Web Checkout
+curl -X POST http://localhost:8080/orders/$ORDER_ID/payment \
+  -H "Authorization: Bearer $TOKEN"
+
+# → {"publicKey":"pub_test_…","reference":"<order>-<unix>","amountInCents":8500000,"currency":"COP",
+#    "signature":"<sha256>","redirectUrl":"https://…/orders/{id}?payment=1"|"","customerEmail":"…"}
+#    redirectUrl es VACÍO si no hay PUBLIC_BASE_URL (Wompi muestra su propia página de éxito)
+
+# 2. El frontend renderiza un <form GET> a checkout.wompi.co/p/ con esos valores
+#    (public-key, currency, amount-in-cents, reference, signature:integrity, redirect-url?, customer-data:email?)
+
+# 3. Wompi hace POST a /webhooks/wompi con el evento "transaction.updated".
+#    El backend valida el checksum (SHA256 de propiedades + timestamp + secreto de eventos)
+#    y cambia payment_status a paid/failed. NUNCA fiar del redirect — el webhook es la verdad.
+
+# Webhook (público, sin JWT) — lo llama Wompi. Respuesta 200 ⇒ procesable.
+# 401 si el checksum es inválido. Siempre 200 para eventos ignorables.
+```
+
 ### Perfil de usuario (requieren JWT)
 
 ```bash
@@ -359,6 +399,12 @@ curl -X DELETE http://localhost:8080/users/me/addresses/<address-id> \
 | `SMTP_USER` | Usuario SMTP (para PlainAuth) | — |
 | `SMTP_PASS` | Contraseña SMTP | — |
 | `SMTP_FROM` | Dirección de origen de los emails | — |
+| `GOOGLE_CLIENT_ID` | OAuth Client ID de Google (tipo Web) | — (si falta, `/auth/google` → 503) |
+| `WOMPI_PUBLIC_KEY` | Llave pública sandbox/prod | — (si falta, pagos deshabilitados) |
+| `WOMPI_INTEGRITY_SECRET` | Secreto de integridad (server-only) | — (si falta, pagos deshabilitados) |
+| `WOMPI_EVENT_SECRET` | Secreto de eventos (server-only) | — (si falta, pagos deshabilitados) |
+| `PUBLIC_BASE_URL` | URL pública del sitio (redirect del checkout) | — (si falta, el redirect se omite; Wompi muestra su propia página de éxito) |
+| `CORS_ORIGIN` | Origen permitido por CORS | `*` |
 
 Formato de `DATABASE_URL`:
 ```
